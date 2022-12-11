@@ -1,6 +1,12 @@
 package Project;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -13,72 +19,71 @@ public class ProductDAL {
 	static Logger logger = Logger.getLogger(Product.class.getName());
 		
 	private ArrayList<Product> products;
+	private Connection connection = null;
+	private Statement statement = null;
+	private PreparedStatement prepStatement = null;
+	private ResultSet resultSet = null;
 	
+	//Establish Database Connection within constructor.
 	public ProductDAL() {
 		products = new ArrayList<>();
+		try {
+			connection = DriverManager.getConnection("jdbc:mysql://localhost/mystore?characterEncoding=utf8","sqluser","password");
+			statement = connection.createStatement();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
-	
-	public ArrayList<Product> getAll(){
-		ArrayList<Product> products = new ArrayList<>();
-		
-		return products;
-	}
-	
-	public void addProduct(Product p) {
+	//Adds product to database.
+	public void add(Product p) {
 		if (p != null) {
-			products.add(p);
+			try {
+			statement.executeUpdate("INSERT INTO products (name, brand, price, salestax, finalprice)" 
+					+ "VALUES (\'" + p.getProdName() + "\', '" + p.getBrandName() + "\', " + p.getPrice() + ", " + p.getSalesTax() +", " + p.getFinalPrice() + ")");
 			logger.log(Level.INFO, "ADDED: " + p.toString());
-		}
-	}
-	public void search(String name){
-		for (Product product : products) {
-			if (product.getProdName().contains(name))
-			{
-				System.out.println(product.toString());
+			} catch (SQLException e) {
+				e.printStackTrace();
 			}
 		}
 	}
-	public void delete(String name) {
-		ArrayList<Product> searchResults = new ArrayList<>();
-		for (Product product : products) {
-			if (product.getProdName().contains(name))
-			{
-				searchResults.add(product);
-				logger.log(Level.INFO, "DELETED: " + product.toString());
-			}
+	public void delete(int ID) {
+		try{
+			statement.executeUpdate("DELETE FROM products WHERE productID = " + ID);
+			logger.log(Level.INFO, "DELETED item at ID " + ID);
+		} catch (SQLException e) {
+			e.printStackTrace();
 		}
-		products.removeAll(searchResults);
 	}
-	public String printAll() {
-		String productList = "";
-		for (Product product : products) {
-			productList += product.toString() + "\n";
+
+	public void updateItem(int ID, Product p) {
+		try {
+			statement.executeUpdate("UPDATE products\r\n"
+					+ "SET Name = \'" + p.getProdName() + "\', Brand = \'" + p.getBrandName() + "\', Price = "
+					+ p.getPrice() + ", SalesTax = " + p.getSalesTax() + ", FinalPrice = " + p.getFinalPrice() + "\r\n"
+					+ "WHERE productID = " + ID);
+			logger.log(Level.INFO, "UPDATED item at ID " + ID);	
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+				
+	}
+
+	public void printer(String query) {
+		try {
+			resultSet = statement.executeQuery(query);
+			while(resultSet.next()) {
+				String[] productString = new String[7];
+				for(int i=0; i < 6; i++) {
+					productString[i] = resultSet.getString(i + 1) + " ";
+				}
+				System.out.println("ID: " + productString[0] + "Name: " + productString[1] + "Brand: " + productString[2] + "Price: " + productString[3] + "SalesTax: " +
+				productString[4] + "FinalPrice " + productString[5]);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
 		}
-		return productList;
 	}
 	
-	public String printSearch(ArrayList<Product> searchResults) {
-		String productList = "";
-		for (Product product : searchResults) {
-			productList += product.toString() + "\n";
-		}
-		return productList;
-	}
-
-	public void updateItem(String name, String newName, String brand, float price) {
-		for (Product product : products) {
-			if (product.getProdName().contains(name)) {
-				product.setProdName(newName);
-				product.setBrandName(brand);
-				product.setPrice(price);
-				product.setSalesTax(price * .07f);
-				product.setFinalPrice(price + product.getSalesTax());
-				logger.log(Level.INFO, "UPDATED: " + product.toString());
-			}
-		}
-		
-	}
-
 	public void instantiateLogger() {
 		logger.setLevel(Level.INFO);
 		try {
