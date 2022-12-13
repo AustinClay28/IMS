@@ -3,11 +3,9 @@ package Project;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -18,15 +16,12 @@ public class ProductDAL {
 	
 	static Logger logger = Logger.getLogger(Product.class.getName());
 		
-	private ArrayList<Product> products;
 	private Connection connection = null;
 	private Statement statement = null;
-	private PreparedStatement prepStatement = null;
 	private ResultSet resultSet = null;
 	
 	//Establish Database Connection within constructor.
 	public ProductDAL() {
-		products = new ArrayList<>();
 		try {
 			connection = DriverManager.getConnection("jdbc:mysql://localhost/mystore?characterEncoding=utf8","sqluser","password");
 			statement = connection.createStatement();
@@ -82,6 +77,17 @@ public class ProductDAL {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public String checklogin(String uname, String pass) {
+		String permissions = "";
+		try {
+			resultSet = statement.executeQuery("SELECT * FROM users WHERE userName = \'" + uname + "\' AND password = \'" + pass + "\'");
+			while(resultSet.next()) {
+				permissions = resultSet.getString(3);
+			}
+		} catch (SQLException e) {e.printStackTrace();}
+		return permissions;
 	}
 	
 	public void instantiateLogger() {
